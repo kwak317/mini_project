@@ -13,7 +13,7 @@ MY_NAME = "이름을 입력하세요"
 
 
 class ScaffoldIncomplete(RuntimeError):
-    """학생이 아직 완성하지 않은 핵심 구간을 화면에 친절하게 알립니다."""
+    """학생이 아직 완성하지 않은 핵심 구간을 화면에 친절하게 알립니다."""#
 
 
 class CNN(nn.Module):
