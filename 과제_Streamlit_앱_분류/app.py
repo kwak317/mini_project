@@ -13,7 +13,7 @@ MY_NAME = "이름을 입력하세요"
 
 
 class ScaffoldIncomplete(RuntimeError):
-    """학생이 아직 완성하지 않은 핵심 구간을 화면에 친절하게 알립니다."""#
+    """학생이 아직 완성하지 않은 핵심 구간을 화면에 친절하게 알립니다."""
 
 
 class CNN(nn.Module):
@@ -41,8 +41,9 @@ class CNN(nn.Module):
 
 
 @st.cache_resource
-def load_model():
+def load_model(model_version: int | None = None):
     """체크포인트로 학습 때와 같은 CNN을 복원합니다."""
+    # model_version은 체크포인트가 바뀌면 Streamlit 캐시를 자동 갱신하는 키입니다.
     checkpoint = torch.load(MODEL_PATH, map_location="cpu", weights_only=True)
     model = CNN(**checkpoint["model_config"])
     model.load_state_dict(checkpoint["state_dict"])
@@ -103,15 +104,44 @@ def apply_page_style() -> None:
         :root { --ink:#17324d; --paper:#f7f1e5; --coral:#e76f51; --mint:#2a9d8f; }
         .stApp { background:linear-gradient(135deg,#fbf8f1 0%,#eef6f3 100%); color:var(--ink); }
         [data-testid="stHeader"] { background:transparent; }
-        [data-testid="stSidebar"] { background:#fffaf0; border-right:1px solid #decfb8; }
+        [data-testid="stSidebar"] { background:#fff !important; border-right:1px solid #e5e8eb; }
+        [data-testid="stSidebar"] * { color:#334155 !important; }
+        [data-testid="stSidebarNav"] a { margin:.2rem .45rem; border-radius:12px; }
+        [data-testid="stSidebarNav"] a:hover { background:#f1f5f9 !important; }
+        [data-testid="stSidebarNav"] a[aria-current="page"] { background:#eaf3ff !important; }
+        [data-testid="stSidebarNav"] a[aria-current="page"] * { color:#1b64da !important; font-weight:750; }
+        [data-testid="stSidebar"] [data-testid="stMetricValue"] { color:#17324d !important; }
         .mp-hero { padding:1.6rem 1.8rem; border:1px solid #d8c8ad; border-radius:18px;
           background:rgba(255,255,255,.82); box-shadow:0 12px 30px rgba(23,50,77,.08); margin-bottom:1.2rem; }
         .mp-kicker { color:var(--coral); font-weight:800; letter-spacing:.08em; font-size:.78rem; }
         .mp-title { color:var(--ink); font-size:clamp(1.8rem,4vw,3rem); line-height:1.08; margin:.35rem 0; }
         .mp-sub { color:#506579; margin:0; max-width:760px; }
         .mp-step { border-left:4px solid var(--mint); padding:.35rem .8rem; color:#40566b; }
+        .mp-result-summary { display:flex; align-items:center; justify-content:space-between; gap:1rem;
+          padding:1.25rem 1.35rem; margin-bottom:1rem; border-radius:16px;
+          background:linear-gradient(135deg,#17324d 0%,#244c70 100%); color:#fff; }
+        .mp-result-label { margin-bottom:.2rem; color:#bcd0e1; font-size:.86rem; font-weight:700;
+          letter-spacing:.04em; }
+        .mp-prediction { color:#fff; font-size:3.8rem; font-weight:850; line-height:1; }
+        .mp-confidence { min-width:150px; padding:.8rem 1rem; border:1px solid rgba(255,255,255,.2);
+          border-radius:14px; background:rgba(255,255,255,.1); text-align:right; }
+        .mp-confidence-label { color:#c9d8e5; font-size:.82rem; font-weight:650; }
+        .mp-confidence-value { margin-top:.1rem; color:#fff; font-size:1.8rem; font-weight:800; line-height:1.2; }
+        .mp-top-title { margin:1.15rem 0 .65rem; color:var(--ink); font-size:1.08rem; font-weight:800; }
+        .mp-top-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:.65rem; margin-bottom:.4rem; }
+        .mp-top-item { padding:.85rem .9rem; border:1px solid #dbe4ea; border-radius:13px;
+          background:#fff; box-shadow:0 4px 14px rgba(23,50,77,.05); }
+        .mp-top-rank { color:#7b8ea0; font-size:.74rem; font-weight:800; letter-spacing:.06em; }
+        .mp-top-row { display:flex; align-items:baseline; justify-content:space-between; gap:.4rem; margin-top:.25rem; }
+        .mp-top-digit { color:var(--ink); font-size:1.55rem; font-weight:850; }
+        .mp-top-prob { color:#2a9d8f; font-size:1.02rem; font-weight:800; }
         [data-testid="stVerticalBlockBorderWrapper"] { border-radius:16px; background:rgba(255,255,255,.68); }
         .stButton>button { border-radius:12px; }
+        @media (max-width:640px) {
+          .mp-result-summary { align-items:stretch; }
+          .mp-confidence { min-width:125px; }
+          .mp-top-grid { grid-template-columns:1fr; }
+        }
         </style>
         """,
         unsafe_allow_html=True,
@@ -151,7 +181,7 @@ def main():
         st.stop()
 
     try:
-        model, checkpoint = load_model()
+        model, checkpoint = load_model(MODEL_PATH.stat().st_mtime_ns)
     except (KeyError, RuntimeError, TypeError) as exc:
         st.error("학습 때의 모델 구조와 앱의 구조가 일치하지 않습니다. checkpoint key를 확인하세요.")
         st.code(str(exc))
@@ -200,11 +230,39 @@ def main():
         probabilities = predict_probabilities(model, x)
         prediction = int(probabilities.argmax())
         with st.container(border=True):
-            st.metric("예측 숫자", prediction)
-            st.caption(f"가장 높은 softmax 점수 · {probabilities[prediction] * 100:.1f}%")
+            confidence = probabilities[prediction] * 100
+            st.markdown(
+                f"""
+                <div class="mp-result-summary">
+                  <div>
+                    <div class="mp-result-label">예측 숫자</div>
+                    <div class="mp-prediction">{prediction}</div>
+                  </div>
+                  <div class="mp-confidence">
+                    <div class="mp-confidence-label">모델 신뢰도</div>
+                    <div class="mp-confidence-value">{confidence:.1f}%</div>
+                  </div>
+                </div>
+                """,
+                unsafe_allow_html=True,
+            )
             st.bar_chart({"클래스 확률": probabilities})
             top3 = probabilities.argsort()[-3:][::-1]
-            st.caption("Top 3 · " + " · ".join(f"{int(i)}: {probabilities[i]:.1%}" for i in top3))
+            top3_cards = "".join(
+                f'<div class="mp-top-item">'
+                f'<div class="mp-top-rank">TOP {rank}</div>'
+                f'<div class="mp-top-row">'
+                f'<span class="mp-top-digit">{int(digit)}</span>'
+                f'<span class="mp-top-prob">{probabilities[digit]:.1%}</span>'
+                f'</div>'
+                f'</div>'
+                for rank, digit in enumerate(top3, start=1)
+            )
+            st.markdown(
+                f'<div class="mp-top-title">가장 가능성 높은 숫자</div>'
+                f'<div class="mp-top-grid">{top3_cards}</div>',
+                unsafe_allow_html=True,
+            )
 
 
 if __name__ == "__main__":

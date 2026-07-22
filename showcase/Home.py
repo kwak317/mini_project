@@ -20,29 +20,58 @@ classification_model = PROJECT_ROOT / "과제_Streamlit_앱_분류/mnist_cnn.pt"
 regression_model = PROJECT_ROOT / "과제_Streamlit_앱_회귀/bike_reg.pt"
 ready_count = sum(path.exists() for path in [classification_model, regression_model])
 
-st.markdown("### 프로젝트 현황")
+st.markdown(
+    """
+    <section class="sc-section">
+      <div class="sc-eyebrow">OVERVIEW</div>
+      <h2 class="sc-section-title">프로젝트를 한눈에</h2>
+      <p class="sc-section-copy">두 모델의 준비 상태와 문제 유형을 빠르게 확인해보세요.</p>
+    </section>
+    """,
+    unsafe_allow_html=True,
+)
 m1, m2, m3 = st.columns(3)
 m1.metric("완성한 모델", f"{ready_count}/2")
 m2.metric("문제 유형", "분류 + 회귀")
 m3.metric("최종 데모", "1 showcase")
 
+st.markdown(
+    """
+    <section class="sc-section">
+      <div class="sc-eyebrow">PROJECTS</div>
+      <h2 class="sc-section-title">두 가지 예측, 하나의 흐름</h2>
+      <p class="sc-section-copy">각 카드를 열어 입력부터 예측 결과까지 직접 확인할 수 있습니다.</p>
+    </section>
+    """,
+    unsafe_allow_html=True,
+)
+
 left, right = st.columns(2, gap="large")
 with left:
     with st.container(border=True):
-        st.markdown("### ✍️ 이미지 분류")
-        st.caption("MNIST · CNN · Accuracy")
+        st.markdown("### 01 · 이미지 분류 ✍️")
+        st.caption("MNIST  ·  CNN  ·  ACCURACY")
         st.write("사진을 28×28 tensor로 변환하고, 학습한 CNN이 숫자 0~9의 확률을 출력합니다.")
         st.success("체크포인트 준비 완료" if classification_model.exists() else "노트북 [Step 7] 완료 후 체크포인트 생성")
         st.page_link("pages/1_분류_MNIST.py", label="분류 모델 열기 →", use_container_width=True)
 with right:
     with st.container(border=True):
-        st.markdown("### 🚲 수요 회귀")
-        st.caption("Seoul Bike · MLP · MAE")
+        st.markdown("### 02 · 수요 회귀 🚲")
+        st.caption("SEOUL BIKE  ·  MLP  ·  MAE")
         st.write("시간과 날씨를 train 통계로 표준화하고, 미래 시점의 시간당 대여량을 예측합니다.")
         st.success("체크포인트 준비 완료" if regression_model.exists() else "체크포인트 저장 셀 완료 후 생성")
         st.page_link("pages/2_회귀_자전거.py", label="회귀 모델 열기 →", use_container_width=True)
 
-st.markdown("### 내가 설명할 수 있어야 하는 것")
+st.markdown(
+    """
+    <section class="sc-section">
+      <div class="sc-eyebrow">LEARNINGS</div>
+      <h2 class="sc-section-title">결과보다 중요한 것</h2>
+      <p class="sc-section-copy">모델이 틀리는 이유를 이해하고, 다음 실험으로 연결한 기록입니다.</p>
+    </section>
+    """,
+    unsafe_allow_html=True,
+)
 q1, q2, q3 = st.columns(3)
 with q1:
     with st.container(border=True):
@@ -56,6 +85,16 @@ with q3:
     with st.container(border=True):
         st.markdown("**03 · 다음 실험**")
         st.write(PROFILE["next_step"])
+
+st.markdown(
+    """
+    <section class="sc-section">
+      <div class="sc-eyebrow">PIPELINE</div>
+      <h2 class="sc-section-title">학습부터 서비스까지</h2>
+    </section>
+    """,
+    unsafe_allow_html=True,
+)
 
 with st.expander("🧩 두 프로젝트가 하나의 showcase가 되는 구조"):
     st.code(
